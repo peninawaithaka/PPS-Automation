@@ -2,14 +2,16 @@
   <x:Members>
     <x:Property sap2010:Annotation.AnnotationText="Transaction item to be processed." Name="in_TransactionItem" Type="InArgument(sd:DataRow)" />
     <x:Property sap2010:Annotation.AnnotationText="Dictionary structure to store configuration data of the process (settings, constants and assets)." Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:Object))" />
+    <x:Property Name="out_FailCount" Type="OutArgument(x:Int32)" />
+    <x:Property Name="out_SuccessCount" Type="OutArgument(x:Int32)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
   </mva:VisualBasic.Settings>
-  <sap:VirtualizedContainerService.HintSize>966.4,4933.6</sap:VirtualizedContainerService.HintSize>
+  <sap:VirtualizedContainerService.HintSize>966.4,5903.2</sap:VirtualizedContainerService.HintSize>
   <sap2010:WorkflowViewState.IdRef>ProcessTransaction_1</sap2010:WorkflowViewState.IdRef>
   <TextExpression.NamespacesForImplementation>
-    <scg:List x:TypeArguments="x:String" Capacity="37">
+    <scg:List x:TypeArguments="x:String" Capacity="40">
       <x:String>System.Activities</x:String>
       <x:String>System.Activities.Statements</x:String>
       <x:String>System.Activities.Expressions</x:String>
@@ -47,10 +49,13 @@
       <x:String>System.Xml.Serialization</x:String>
       <x:String>UiPath.Excel.Activities</x:String>
       <x:String>UiPath.Excel</x:String>
+      <x:String>UiPath.Mail</x:String>
+      <x:String>UiPath.Mail.Outlook.Activities</x:String>
+      <x:String>UiPath.Mail.Activities</x:String>
     </scg:List>
   </TextExpression.NamespacesForImplementation>
   <TextExpression.ReferencesForImplementation>
-    <scg:List x:TypeArguments="AssemblyReference" Capacity="34">
+    <scg:List x:TypeArguments="AssemblyReference" Capacity="70">
       <AssemblyReference>System.Activities</AssemblyReference>
       <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
       <AssemblyReference>mscorlib</AssemblyReference>
@@ -85,9 +90,11 @@
       <AssemblyReference>UiPath.Excel.Activities</AssemblyReference>
       <AssemblyReference>UiPath.Testing.Activities</AssemblyReference>
       <AssemblyReference>UiPath.OCR.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Mail.Activities</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </scg:List>
   </TextExpression.ReferencesForImplementation>
-  <Sequence sap2010:Annotation.AnnotationText="Invoke major steps of the business process, which are usually implemented by multiple subworkflows.&#xA;&#xA;If a BusinessRuleException is thrown, the transaction is skipped. &#xA;If another kind of exception occurs, the current transaction can be retried. " DisplayName="Process" sap:VirtualizedContainerService.HintSize="587.2,4868.8" sap2010:WorkflowViewState.IdRef="Sequence_1">
+  <Sequence sap2010:Annotation.AnnotationText="Invoke major steps of the business process, which are usually implemented by multiple subworkflows.&#xA;&#xA;If a BusinessRuleException is thrown, the transaction is skipped. &#xA;If another kind of exception occurs, the current transaction can be retried. " DisplayName="Process" sap:VirtualizedContainerService.HintSize="570.4,5838.4" sap2010:WorkflowViewState.IdRef="Sequence_1">
     <Sequence.Variables>
       <Variable x:TypeArguments="x:String" Name="Username" />
       <Variable x:TypeArguments="x:String" Name="Login_Password" />
@@ -96,6 +103,9 @@
       <Variable x:TypeArguments="sd:DataTable" Name="dt_Results" />
       <Variable x:TypeArguments="x:String" Name="Mail_Address" />
       <Variable x:TypeArguments="x:String" Name="Password" />
+      <Variable x:TypeArguments="s:DateTime" Name="EndTime" />
+      <Variable x:TypeArguments="x:TimeSpan" Name="ProcessTime" />
+      <Variable x:TypeArguments="s:DateTime" Name="StartTime" />
     </Sequence.Variables>
     <sap:WorkflowViewStateService.ViewState>
       <scg:Dictionary x:TypeArguments="x:String, x:Object">
@@ -103,9 +113,9 @@
         <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
       </scg:Dictionary>
     </sap:WorkflowViewStateService.ViewState>
-    <ui:LogMessage DisplayName="Log Message Process Start" sap:VirtualizedContainerService.HintSize="545.6,92.8" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Started Process&quot;]" />
-    <ui:Comment DisplayName="Comment (placeholder)" sap:VirtualizedContainerService.HintSize="545.6,56" sap2010:WorkflowViewState.IdRef="Comment_1" Text="//  Invoke steps of the process" />
-    <ui:MultipleAssign DisplayName="Multiple Assign" sap:VirtualizedContainerService.HintSize="545.6,132" sap2010:WorkflowViewState.IdRef="MultipleAssign_1">
+    <ui:LogMessage DisplayName="Log Message Process Start" sap:VirtualizedContainerService.HintSize="528.8,92.8" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Started Process&quot;]" />
+    <ui:Comment DisplayName="Comment (placeholder)" sap:VirtualizedContainerService.HintSize="528.8,56" sap2010:WorkflowViewState.IdRef="Comment_1" Text="//  Invoke steps of the process" />
+    <ui:MultipleAssign DisplayName="Multiple Assign" sap:VirtualizedContainerService.HintSize="528.8,132" sap2010:WorkflowViewState.IdRef="MultipleAssign_1">
       <ui:MultipleAssign.AssignOperations>
         <scg:List x:TypeArguments="ui:AssignOperation" Capacity="4">
           <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_1">
@@ -127,22 +137,31 @@
         </scg:List>
       </ui:MultipleAssign.AssignOperations>
     </ui:MultipleAssign>
-    <TryCatch DisplayName="Try Catch" sap:VirtualizedContainerService.HintSize="545.6,3815.2" sap2010:WorkflowViewState.IdRef="TryCatch_2">
+    <TryCatch DisplayName="Try Catch" sap:VirtualizedContainerService.HintSize="528.8,4436" sap2010:WorkflowViewState.IdRef="TryCatch_2">
       <TryCatch.Try>
-        <Sequence sap:VirtualizedContainerService.HintSize="508.8,3584" sap2010:WorkflowViewState.IdRef="Sequence_6">
+        <Sequence sap:VirtualizedContainerService.HintSize="492,4204.8" sap2010:WorkflowViewState.IdRef="Sequence_6">
           <Sequence.Variables>
             <Variable x:TypeArguments="x:Boolean" Name="Icon" />
             <Variable x:TypeArguments="x:Boolean" Name="Avater" />
-            <Variable x:TypeArguments="x:Boolean" Name="URL" />
             <Variable x:TypeArguments="x:Boolean" Name="UserNameNotFound" />
             <Variable x:TypeArguments="x:Boolean" Name="WrongPassword" />
+            <Variable x:TypeArguments="x:Boolean" Name="Appointment" />
+            <Variable x:TypeArguments="x:Boolean" Name="NoAppointment" />
           </Sequence.Variables>
           <sap:WorkflowViewStateService.ViewState>
             <scg:Dictionary x:TypeArguments="x:String, x:Object">
               <x:Boolean x:Key="IsExpanded">True</x:Boolean>
             </scg:Dictionary>
           </sap:WorkflowViewStateService.ViewState>
-          <ui:TypeInto AlterIfDisabled="{x:Null}" ClickBeforeTyping="{x:Null}" DelayBefore="{x:Null}" DelayBetweenKeys="{x:Null}" DelayMS="{x:Null}" EmptyField="{x:Null}" SendWindowMessages="{x:Null}" Activate="True" DisplayName="Type Into 'Username'" sap:VirtualizedContainerService.HintSize="467.2,135.2" sap2010:WorkflowViewState.IdRef="TypeInto_2" SimulateType="True" Text="[Username]">
+          <Assign sap:VirtualizedContainerService.HintSize="450.4,60" sap2010:WorkflowViewState.IdRef="Assign_13">
+            <Assign.To>
+              <OutArgument x:TypeArguments="s:DateTime">[StartTime]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="s:DateTime">[Now]</InArgument>
+            </Assign.Value>
+          </Assign>
+          <ui:TypeInto ClickBeforeTyping="{x:Null}" DelayBefore="{x:Null}" DelayBetweenKeys="{x:Null}" DelayMS="{x:Null}" EmptyField="{x:Null}" SendWindowMessages="{x:Null}" Activate="True" AlterIfDisabled="True" DisplayName="Type Into 'Username'" sap:VirtualizedContainerService.HintSize="450.4,135.2" sap2010:WorkflowViewState.IdRef="TypeInto_2" SimulateType="True" Text="[Username]">
             <ui:TypeInto.Target>
               <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="02ecbfc2-98e8-4e3b-945b-07056de1bf55" InformativeScreenshot="d9332ff44d76627b1a1912aa144d9157" Selector="&lt;html app='chrome.exe' title='Login | Power Pet Sitter' /&gt;&lt;webctrl tag='INPUT' name='Username' title='Login | Power Pet Sitter' type='text' /&gt;">
                 <ui:Target.TimeoutMS>
@@ -154,8 +173,8 @@
               </ui:Target>
             </ui:TypeInto.Target>
           </ui:TypeInto>
-          <ui:LogMessage DisplayName="Log Message" sap:VirtualizedContainerService.HintSize="467.2,92.8" sap2010:WorkflowViewState.IdRef="LogMessage_6" Level="Warn" Message="[Username]" />
-          <Assign sap:VirtualizedContainerService.HintSize="467.2,60" sap2010:WorkflowViewState.IdRef="Assign_11">
+          <ui:LogMessage DisplayName="Log Message" sap:VirtualizedContainerService.HintSize="450.4,92.8" sap2010:WorkflowViewState.IdRef="LogMessage_6" Level="Warn" Message="[Username]" />
+          <Assign sap:VirtualizedContainerService.HintSize="450.4,60" sap2010:WorkflowViewState.IdRef="Assign_11">
             <Assign.To>
               <OutArgument x:TypeArguments="x:String">[Mail_Address]</OutArgument>
             </Assign.To>
@@ -163,7 +182,7 @@
               <InArgument x:TypeArguments="x:String">[Username]</InArgument>
             </Assign.Value>
           </Assign>
-          <ui:TypeInto AlterIfDisabled="{x:Null}" ClickBeforeTyping="{x:Null}" DelayBefore="{x:Null}" DelayBetweenKeys="{x:Null}" DelayMS="{x:Null}" EmptyField="{x:Null}" SendWindowMessages="{x:Null}" SimulateType="{x:Null}" Activate="True" DisplayName="Type Into 'INPUT  Password'" sap:VirtualizedContainerService.HintSize="467.2,135.2" sap2010:WorkflowViewState.IdRef="TypeInto_3" Text="[Password]">
+          <ui:TypeInto ClickBeforeTyping="{x:Null}" DelayBefore="{x:Null}" DelayBetweenKeys="{x:Null}" DelayMS="{x:Null}" EmptyField="{x:Null}" SendWindowMessages="{x:Null}" Activate="True" AlterIfDisabled="True" DisplayName="Type Into 'INPUT  Password'" sap:VirtualizedContainerService.HintSize="450.4,135.2" sap2010:WorkflowViewState.IdRef="TypeInto_3" SimulateType="True" Text="[Password]">
             <ui:TypeInto.Target>
               <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="af552f2c-3644-4d22-8c9d-a9d4a0e93697" InformativeScreenshot="d7494c27c8b61a991321452b9ec002dc" Selector="&lt;html app='chrome.exe' title='Login | Power Pet Sitter' /&gt;&lt;webctrl tag='INPUT' type='password' /&gt;">
                 <ui:Target.TimeoutMS>
@@ -175,7 +194,7 @@
               </ui:Target>
             </ui:TypeInto.Target>
           </ui:TypeInto>
-          <Assign sap:VirtualizedContainerService.HintSize="467.2,60" sap2010:WorkflowViewState.IdRef="Assign_12">
+          <Assign sap:VirtualizedContainerService.HintSize="450.4,60" sap2010:WorkflowViewState.IdRef="Assign_12">
             <Assign.To>
               <OutArgument x:TypeArguments="x:String">[Login_Password]</OutArgument>
             </Assign.To>
@@ -183,7 +202,7 @@
               <InArgument x:TypeArguments="x:String">[Password]</InArgument>
             </Assign.Value>
           </Assign>
-          <ui:Click AlterIfDisabled="{x:Null}" DelayBefore="{x:Null}" DelayMS="{x:Null}" SendWindowMessages="{x:Null}" SimulateClick="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click 'Login'" sap:VirtualizedContainerService.HintSize="467.2,107.2" sap2010:WorkflowViewState.IdRef="Click_1" KeyModifiers="None" MouseButton="BTN_LEFT">
+          <ui:Click AlterIfDisabled="{x:Null}" DelayBefore="{x:Null}" DelayMS="{x:Null}" SendWindowMessages="{x:Null}" SimulateClick="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click 'Login'" sap:VirtualizedContainerService.HintSize="450.4,107.2" sap2010:WorkflowViewState.IdRef="Click_1" KeyModifiers="None" MouseButton="BTN_LEFT">
             <ui:Click.CursorPosition>
               <ui:CursorPosition Position="Center">
                 <ui:CursorPosition.OffsetX>
@@ -205,12 +224,9 @@
               </ui:Target>
             </ui:Click.Target>
           </ui:Click>
-          <ui:UiElementExists DisplayName="Element Exists 'Icon'" Exists="[Icon]" sap:VirtualizedContainerService.HintSize="467.2,52.8" sap2010:WorkflowViewState.IdRef="UiElementExists_4">
+          <ui:UiElementExists DisplayName="Element Exists 'Icon'" Exists="[Icon]" sap:VirtualizedContainerService.HintSize="450.4,52.8" sap2010:WorkflowViewState.IdRef="UiElementExists_4">
             <ui:UiElementExists.Target>
-              <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="6e746788-5316-4424-a28e-e92f071be345" InformativeScreenshot="e1ff921be735e940d647bda73960a788" Selector="&lt;html app='chrome.exe' title='Home | Power Pet Sitter' /&gt;&lt;webctrl tag='IMG' title='Home | Power Pet Sitter' /&gt;">
-                <ui:Target.TimeoutMS>
-                  <InArgument x:TypeArguments="x:Int32" />
-                </ui:Target.TimeoutMS>
+              <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="6e746788-5316-4424-a28e-e92f071be345" InformativeScreenshot="e1ff921be735e940d647bda73960a788" Selector="&lt;html app='chrome.exe' title='Home | Power Pet Sitter' /&gt;&lt;webctrl tag='IMG' aaname='Steves Monkey' title='Home | Power Pet Sitter' /&gt;" TimeoutMS="5000">
                 <ui:Target.WaitForReady>
                   <InArgument x:TypeArguments="ui:WaitForReady" />
                 </ui:Target.WaitForReady>
@@ -223,12 +239,9 @@
               </scg:Dictionary>
             </sap:WorkflowViewStateService.ViewState>
           </ui:UiElementExists>
-          <ui:UiElementExists DisplayName="Element Exists 'Avater'" Exists="[Avater]" sap:VirtualizedContainerService.HintSize="467.2,52.8" sap2010:WorkflowViewState.IdRef="UiElementExists_3">
+          <ui:UiElementExists DisplayName="Element Exists 'Avater'" Exists="[Avater]" sap:VirtualizedContainerService.HintSize="450.4,52.8" sap2010:WorkflowViewState.IdRef="UiElementExists_3">
             <ui:UiElementExists.Target>
-              <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="cdbb21b5-21e3-4f24-89ea-436d41d9744f" InformativeScreenshot="f0ab328aede045a6eb5367ed1728ae1a" Selector="&lt;html app='chrome.exe' title='Home | Power Pet Sitter' /&gt;&lt;webctrl tag='I' title='Home | Power Pet Sitter' /&gt;">
-                <ui:Target.TimeoutMS>
-                  <InArgument x:TypeArguments="x:Int32" />
-                </ui:Target.TimeoutMS>
+              <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="cdbb21b5-21e3-4f24-89ea-436d41d9744f" InformativeScreenshot="f0ab328aede045a6eb5367ed1728ae1a" Selector="&lt;html app='chrome.exe' title='Home | Power Pet Sitter' /&gt;&lt;webctrl aaname='' tag='I' title='Home | Power Pet Sitter' /&gt;" TimeoutMS="5000">
                 <ui:Target.WaitForReady>
                   <InArgument x:TypeArguments="ui:WaitForReady" />
                 </ui:Target.WaitForReady>
@@ -241,12 +254,9 @@
               </scg:Dictionary>
             </sap:WorkflowViewStateService.ViewState>
           </ui:UiElementExists>
-          <ui:UiElementExists DisplayName="Element Exists 'URL'" Exists="[URL]" sap:VirtualizedContainerService.HintSize="467.2,52.8" sap2010:WorkflowViewState.IdRef="UiElementExists_2">
+          <ui:UiElementExists DisplayName="Element Exists 'appointment'" Exists="[Appointment]" sap:VirtualizedContainerService.HintSize="450.4,52.8" sap2010:WorkflowViewState.IdRef="UiElementExists_9">
             <ui:UiElementExists.Target>
-              <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="be4eadd6-f5cf-4588-8f7f-b8e93ba061c1" InformativeScreenshot="b2e4a624e0511f79248c93a74500beb6" Selector="&lt;wnd app='chrome.exe' cls='Chrome_WidgetWin_1' title='Home | Power Pet Sitter - Google Chrome' /&gt;&lt;ctrl name='Home | Power Pet Sitter - Google Chrome - penina' role='pane' /&gt;&lt;ctrl name='Google Chrome' role='pane' /&gt;&lt;ctrl name='Address and search bar' role='editable text' /&gt;">
-                <ui:Target.TimeoutMS>
-                  <InArgument x:TypeArguments="x:Int32" />
-                </ui:Target.TimeoutMS>
+              <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="320bf6c2-3d24-414e-9db7-c7110ea60aff" InformativeScreenshot="51fb93c44d10d154316f82adff27526c" Selector="&lt;html app='chrome.exe' title='Home | Power Pet Sitter' /&gt;&lt;webctrl css-selector='body&amp;gt;div&amp;gt;div&amp;gt;section&amp;gt;div&amp;gt;div&amp;gt;div&amp;gt;div&amp;gt;div&amp;gt;div&amp;gt;div' parentid='root' tag='DIV' /&gt;" TimeoutMS="5000">
                 <ui:Target.WaitForReady>
                   <InArgument x:TypeArguments="ui:WaitForReady" />
                 </ui:Target.WaitForReady>
@@ -259,12 +269,9 @@
               </scg:Dictionary>
             </sap:WorkflowViewStateService.ViewState>
           </ui:UiElementExists>
-          <ui:UiElementExists DisplayName="Element Exists &quot;UserName Not Found&quot;" Exists="[UserNameNotFound]" sap:VirtualizedContainerService.HintSize="467.2,52.8" sap2010:WorkflowViewState.IdRef="UiElementExists_5">
+          <ui:UiElementExists DisplayName="Element Exists 'no appointment'" Exists="[NoAppointment]" sap:VirtualizedContainerService.HintSize="450.4,52.8" sap2010:WorkflowViewState.IdRef="UiElementExists_8">
             <ui:UiElementExists.Target>
-              <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="b8b61569-684d-41d5-8e13-4ba5c41a86b4" InformativeScreenshot="d7a7f7ad206c5cd1191ca827dd27b3f2" Selector="&lt;html app='chrome.exe' title='Login | Power Pet Sitter' /&gt;&lt;webctrl css-selector='body&amp;gt;div&amp;gt;div&amp;gt;div&amp;gt;div&amp;gt;section&amp;gt;div' isleaf='1' parentid='root' tag='DIV' /&gt;">
-                <ui:Target.TimeoutMS>
-                  <InArgument x:TypeArguments="x:Int32" />
-                </ui:Target.TimeoutMS>
+              <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="74493315-a4e7-4cd8-9911-547c68070ddc" InformativeScreenshot="5a5134ebf3d8c3605845384b9db4a838" Selector="&lt;html app='chrome.exe' title='Home | Power Pet Sitter' /&gt;&lt;webctrl css-selector='body&amp;gt;div&amp;gt;div&amp;gt;section&amp;gt;div&amp;gt;div&amp;gt;div&amp;gt;div' idx='2' parentid='root' tag='DIV' /&gt;" TimeoutMS="5000">
                 <ui:Target.WaitForReady>
                   <InArgument x:TypeArguments="ui:WaitForReady" />
                 </ui:Target.WaitForReady>
@@ -277,12 +284,9 @@
               </scg:Dictionary>
             </sap:WorkflowViewStateService.ViewState>
           </ui:UiElementExists>
-          <ui:UiElementExists DisplayName="Element Exists 'Wrong Password'" Exists="[WrongPassword]" sap:VirtualizedContainerService.HintSize="467.2,52.8" sap2010:WorkflowViewState.IdRef="UiElementExists_6">
+          <ui:UiElementExists DisplayName="Element Exists &quot;UserName Not Found&quot;" Exists="[UserNameNotFound]" sap:VirtualizedContainerService.HintSize="450.4,52.8" sap2010:WorkflowViewState.IdRef="UiElementExists_5">
             <ui:UiElementExists.Target>
-              <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="157a1728-81dc-4b9f-b24d-b9661c6db9e6" InformativeScreenshot="027621a684343f3e3d1f6044fef4c315" Selector="&lt;html app='chrome.exe' title='Login | Power Pet Sitter' /&gt;&lt;webctrl aaname='Invalid Password' parentid='root' tag='DIV' /&gt;">
-                <ui:Target.TimeoutMS>
-                  <InArgument x:TypeArguments="x:Int32" />
-                </ui:Target.TimeoutMS>
+              <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="b8b61569-684d-41d5-8e13-4ba5c41a86b4" InformativeScreenshot="d7a7f7ad206c5cd1191ca827dd27b3f2" Selector="&lt;html app='chrome.exe' title='Login | Power Pet Sitter' /&gt;&lt;webctrl css-selector='body&amp;gt;div&amp;gt;div&amp;gt;div&amp;gt;div&amp;gt;section&amp;gt;div' isleaf='1' parentid='root' tag='DIV' /&gt;" TimeoutMS="5000">
                 <ui:Target.WaitForReady>
                   <InArgument x:TypeArguments="ui:WaitForReady" />
                 </ui:Target.WaitForReady>
@@ -295,12 +299,27 @@
               </scg:Dictionary>
             </sap:WorkflowViewStateService.ViewState>
           </ui:UiElementExists>
-          <ui:IfElseIf DisplayName="Else If" sap:VirtualizedContainerService.HintSize="467.2,2196.8" sap2010:WorkflowViewState.IdRef="IfElseIf_1">
+          <ui:UiElementExists DisplayName="Element Exists 'Wrong Password'" Exists="[WrongPassword]" sap:VirtualizedContainerService.HintSize="450.4,52.8" sap2010:WorkflowViewState.IdRef="UiElementExists_6">
+            <ui:UiElementExists.Target>
+              <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="157a1728-81dc-4b9f-b24d-b9661c6db9e6" InformativeScreenshot="027621a684343f3e3d1f6044fef4c315" Selector="&lt;html app='chrome.exe' title='Login | Power Pet Sitter' /&gt;&lt;webctrl aaname='Invalid Password' parentid='root' tag='DIV' /&gt;" TimeoutMS="5000">
+                <ui:Target.WaitForReady>
+                  <InArgument x:TypeArguments="ui:WaitForReady" />
+                </ui:Target.WaitForReady>
+              </ui:Target>
+            </ui:UiElementExists.Target>
+            <sap:WorkflowViewStateService.ViewState>
+              <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+                <x:Boolean x:Key="IsPinned">False</x:Boolean>
+              </scg:Dictionary>
+            </sap:WorkflowViewStateService.ViewState>
+          </ui:UiElementExists>
+          <ui:IfElseIf DisplayName="Else If" sap:VirtualizedContainerService.HintSize="450.4,2624.8" sap2010:WorkflowViewState.IdRef="IfElseIf_1">
             <ui:IfElseIf.ConditionBlocks>
               <sc:BindingList x:TypeArguments="ui:IfElseIfBlock" AllowEdit="True" AllowNew="True" AllowRemove="True" RaiseListChangedEvents="True">
-                <ui:IfElseIfBlock BlockType="If" Condition="[Icon AND Avater AND URL]">
+                <ui:IfElseIfBlock BlockType="If" Condition="[Icon AND Avater OR Appointment OR NoAppointment]">
                   <ui:IfElseIfBlock.Then>
-                    <Sequence DisplayName="Body" sap:VirtualizedContainerService.HintSize="375.2,675.2" sap2010:WorkflowViewState.IdRef="Sequence_11">
+                    <Sequence DisplayName="Body" sap:VirtualizedContainerService.HintSize="375.2,903.2" sap2010:WorkflowViewState.IdRef="Sequence_11">
                       <sap:WorkflowViewStateService.ViewState>
                         <scg:Dictionary x:TypeArguments="x:String, x:Object">
                           <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -314,14 +333,23 @@
                           <InArgument x:TypeArguments="x:String">Success</InArgument>
                         </Assign.Value>
                       </Assign>
+                      <Assign sap:VirtualizedContainerService.HintSize="333.6,60" sap2010:WorkflowViewState.IdRef="Assign_16">
+                        <Assign.To>
+                          <OutArgument x:TypeArguments="x:Int32">[out_SuccessCount]</OutArgument>
+                        </Assign.To>
+                        <Assign.Value>
+                          <InArgument x:TypeArguments="x:Int32">[out_SuccessCount+1]</InArgument>
+                        </Assign.Value>
+                      </Assign>
                       <Assign DisplayName="Assign Reason" sap:VirtualizedContainerService.HintSize="333.6,60" sap2010:WorkflowViewState.IdRef="Assign_4">
                         <Assign.To>
                           <OutArgument x:TypeArguments="x:String">[Reason]</OutArgument>
                         </Assign.To>
                         <Assign.Value>
-                          <InArgument x:TypeArguments="x:String">Icon, avater, URL found</InArgument>
+                          <InArgument x:TypeArguments="x:String">Login Successful</InArgument>
                         </Assign.Value>
                       </Assign>
+                      <ui:LogMessage DisplayName="Log Message" sap:VirtualizedContainerService.HintSize="333.6,88" sap2010:WorkflowViewState.IdRef="LogMessage_7" Level="Fatal" Message="[&quot;Logged in successfully&quot;]" />
                       <ui:Click AlterIfDisabled="{x:Null}" DelayBefore="{x:Null}" DelayMS="{x:Null}" SendWindowMessages="{x:Null}" SimulateClick="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click Drop down" sap:VirtualizedContainerService.HintSize="333.6,107.2" sap2010:WorkflowViewState.IdRef="Click_4" KeyModifiers="None" MouseButton="BTN_LEFT">
                         <ui:Click.CursorPosition>
                           <ui:CursorPosition Position="Center">
@@ -334,7 +362,7 @@
                           </ui:CursorPosition>
                         </ui:Click.CursorPosition>
                         <ui:Click.Target>
-                          <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="1350b3ee-9fc5-4c75-b24e-7e2dda06e521" InformativeScreenshot="06f595dcf0e2e168bb31966aa5ed553e" Selector="&lt;html app='chrome.exe' title='Home | Power Pet Sitter' /&gt;&lt;webctrl tag='BUTTON' /&gt;">
+                          <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="1350b3ee-9fc5-4c75-b24e-7e2dda06e521" InformativeScreenshot="06f595dcf0e2e168bb31966aa5ed553e" Selector="&lt;html app='chrome.exe' title='Home | Power Pet Sitter' /&gt;&lt;webctrl tag='BUTTON' type='button' class='d-flex align-items-center dropdown-toggle btn btn-none' parentclass='float-right dropdown' /&gt;">
                             <ui:Target.TimeoutMS>
                               <InArgument x:TypeArguments="x:Int32" />
                             </ui:Target.TimeoutMS>
@@ -372,7 +400,7 @@
                 </ui:IfElseIfBlock>
                 <ui:IfElseIfBlock BlockType="ElseIf" Condition="[UserNameNotFound]">
                   <ui:IfElseIfBlock.Then>
-                    <Sequence DisplayName="Body" sap:VirtualizedContainerService.HintSize="375.2,400" sap2010:WorkflowViewState.IdRef="Sequence_12">
+                    <Sequence DisplayName="Body" sap:VirtualizedContainerService.HintSize="375.2,500" sap2010:WorkflowViewState.IdRef="Sequence_12">
                       <Sequence.Variables>
                         <Variable x:TypeArguments="x:String" Name="InvalidName" />
                       </Sequence.Variables>
@@ -404,6 +432,14 @@
                           <InArgument x:TypeArguments="x:String">Fail</InArgument>
                         </Assign.Value>
                       </Assign>
+                      <Assign sap:VirtualizedContainerService.HintSize="333.6,60" sap2010:WorkflowViewState.IdRef="Assign_17">
+                        <Assign.To>
+                          <OutArgument x:TypeArguments="x:Int32">[out_FailCount]</OutArgument>
+                        </Assign.To>
+                        <Assign.Value>
+                          <InArgument x:TypeArguments="x:Int32">[out_FailCount+1]</InArgument>
+                        </Assign.Value>
+                      </Assign>
                       <Assign DisplayName="Assign Reason" sap:VirtualizedContainerService.HintSize="333.6,60" sap2010:WorkflowViewState.IdRef="Assign_6">
                         <Assign.To>
                           <OutArgument x:TypeArguments="x:String">[Reason]</OutArgument>
@@ -417,7 +453,7 @@
                 </ui:IfElseIfBlock>
                 <ui:IfElseIfBlock BlockType="ElseIf" Condition="[WrongPassword]">
                   <ui:IfElseIfBlock.Then>
-                    <Sequence DisplayName="Body" sap:VirtualizedContainerService.HintSize="375.2,400" sap2010:WorkflowViewState.IdRef="Sequence_13">
+                    <Sequence DisplayName="Body" sap:VirtualizedContainerService.HintSize="375.2,500" sap2010:WorkflowViewState.IdRef="Sequence_13">
                       <Sequence.Variables>
                         <Variable x:TypeArguments="x:String" Name="InvalidPassword" />
                       </Sequence.Variables>
@@ -447,6 +483,14 @@
                         </Assign.To>
                         <Assign.Value>
                           <InArgument x:TypeArguments="x:String">Fail</InArgument>
+                        </Assign.Value>
+                      </Assign>
+                      <Assign sap:VirtualizedContainerService.HintSize="333.6,60" sap2010:WorkflowViewState.IdRef="Assign_18">
+                        <Assign.To>
+                          <OutArgument x:TypeArguments="x:Int32">[out_FailCount]</OutArgument>
+                        </Assign.To>
+                        <Assign.Value>
+                          <InArgument x:TypeArguments="x:Int32">[out_FailCount+1]</InArgument>
                         </Assign.Value>
                       </Assign>
                       <Assign sap:VirtualizedContainerService.HintSize="333.6,60" sap2010:WorkflowViewState.IdRef="Assign_8">
@@ -493,7 +537,7 @@
         </Sequence>
       </TryCatch.Try>
       <TryCatch.Catches>
-        <Catch x:TypeArguments="s:Exception" sap:VirtualizedContainerService.HintSize="512,22.4" sap2010:WorkflowViewState.IdRef="Catch`1_1">
+        <Catch x:TypeArguments="s:Exception" sap:VirtualizedContainerService.HintSize="495.2,22.4" sap2010:WorkflowViewState.IdRef="Catch`1_1">
           <sap:WorkflowViewStateService.ViewState>
             <scg:Dictionary x:TypeArguments="x:String, x:Object">
               <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -512,8 +556,25 @@
         <ui:LogMessage DisplayName="Log Message" sap:VirtualizedContainerService.HintSize="333.6,92.8" sap2010:WorkflowViewState.IdRef="LogMessage_5" Level="Trace" Message="[&quot;Finally Block&quot;]" />
       </TryCatch.Finally>
     </TryCatch>
-    <ui:BuildDataTable DataTable="[dt_Results]" DisplayName="Build Data Table" sap:VirtualizedContainerService.HintSize="545.6,60" sap2010:WorkflowViewState.IdRef="BuildDataTable_1" TableInfo="&lt;NewDataSet&gt;&#xD;&#xA;  &lt;xs:schema id=&quot;NewDataSet&quot; xmlns=&quot;&quot; xmlns:xs=&quot;http://www.w3.org/2001/XMLSchema&quot; xmlns:msdata=&quot;urn:schemas-microsoft-com:xml-msdata&quot;&gt;&#xD;&#xA;    &lt;xs:element name=&quot;NewDataSet&quot; msdata:IsDataSet=&quot;true&quot; msdata:MainDataTable=&quot;TableName&quot; msdata:UseCurrentLocale=&quot;true&quot;&gt;&#xD;&#xA;      &lt;xs:complexType&gt;&#xD;&#xA;        &lt;xs:choice minOccurs=&quot;0&quot; maxOccurs=&quot;unbounded&quot;&gt;&#xD;&#xA;          &lt;xs:element name=&quot;TableName&quot;&gt;&#xD;&#xA;            &lt;xs:complexType&gt;&#xD;&#xA;              &lt;xs:sequence&gt;&#xD;&#xA;                &lt;xs:element name=&quot;Mail_Address&quot; msdata:Caption=&quot;&quot; minOccurs=&quot;0&quot;&gt;&#xD;&#xA;                  &lt;xs:simpleType&gt;&#xD;&#xA;                    &lt;xs:restriction base=&quot;xs:string&quot;&gt;&#xD;&#xA;                      &lt;xs:maxLength value=&quot;100&quot; /&gt;&#xD;&#xA;                    &lt;/xs:restriction&gt;&#xD;&#xA;                  &lt;/xs:simpleType&gt;&#xD;&#xA;                &lt;/xs:element&gt;&#xD;&#xA;                &lt;xs:element name=&quot;Password&quot; msdata:Caption=&quot;&quot; minOccurs=&quot;0&quot;&gt;&#xD;&#xA;                  &lt;xs:simpleType&gt;&#xD;&#xA;                    &lt;xs:restriction base=&quot;xs:string&quot;&gt;&#xD;&#xA;                      &lt;xs:maxLength value=&quot;100&quot; /&gt;&#xD;&#xA;                    &lt;/xs:restriction&gt;&#xD;&#xA;                  &lt;/xs:simpleType&gt;&#xD;&#xA;                &lt;/xs:element&gt;&#xD;&#xA;                &lt;xs:element name=&quot;Status&quot; msdata:Caption=&quot;&quot; minOccurs=&quot;0&quot;&gt;&#xD;&#xA;                  &lt;xs:simpleType&gt;&#xD;&#xA;                    &lt;xs:restriction base=&quot;xs:string&quot;&gt;&#xD;&#xA;                      &lt;xs:maxLength value=&quot;100&quot; /&gt;&#xD;&#xA;                    &lt;/xs:restriction&gt;&#xD;&#xA;                  &lt;/xs:simpleType&gt;&#xD;&#xA;                &lt;/xs:element&gt;&#xD;&#xA;                &lt;xs:element name=&quot;Reason&quot; msdata:Caption=&quot;&quot; minOccurs=&quot;0&quot;&gt;&#xD;&#xA;                  &lt;xs:simpleType&gt;&#xD;&#xA;                    &lt;xs:restriction base=&quot;xs:string&quot;&gt;&#xD;&#xA;                      &lt;xs:maxLength value=&quot;100&quot; /&gt;&#xD;&#xA;                    &lt;/xs:restriction&gt;&#xD;&#xA;                  &lt;/xs:simpleType&gt;&#xD;&#xA;                &lt;/xs:element&gt;&#xD;&#xA;              &lt;/xs:sequence&gt;&#xD;&#xA;            &lt;/xs:complexType&gt;&#xD;&#xA;          &lt;/xs:element&gt;&#xD;&#xA;        &lt;/xs:choice&gt;&#xD;&#xA;      &lt;/xs:complexType&gt;&#xD;&#xA;    &lt;/xs:element&gt;&#xD;&#xA;  &lt;/xs:schema&gt;&#xD;&#xA;&lt;/NewDataSet&gt;" />
-    <ui:AddDataRow DataRow="{x:Null}" ArrayRow="[{Mail_Address,Login_Password,Status,Reason}]" DataTable="[dt_Results]" DisplayName="Add Data Row" sap:VirtualizedContainerService.HintSize="545.6,188" sap2010:WorkflowViewState.IdRef="AddDataRow_1" />
-    <ui:AppendRange DataTable="[dt_Results]" DisplayName="Append Range" sap:VirtualizedContainerService.HintSize="545.6,116" sap2010:WorkflowViewState.IdRef="AppendRange_1" SheetName="Sheet1" WorkbookPath="[in_Config(&quot;ResultsData_path&quot;).ToString]" />
+    <Assign sap:VirtualizedContainerService.HintSize="528.8,60" sap2010:WorkflowViewState.IdRef="Assign_14">
+      <Assign.To>
+        <OutArgument x:TypeArguments="s:DateTime">[EndTime]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="s:DateTime">[Now]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <Assign sap:VirtualizedContainerService.HintSize="528.8,60" sap2010:WorkflowViewState.IdRef="Assign_15">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:TimeSpan">[ProcessTime]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:TimeSpan">[EndTime-StartTime]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <ui:LogMessage DisplayName="Log Message" sap:VirtualizedContainerService.HintSize="528.8,92.8" sap2010:WorkflowViewState.IdRef="LogMessage_8" Level="Warn" Message="[out_FailCount]" />
+    <ui:BuildDataTable DataTable="[dt_Results]" DisplayName="Build Data Table" sap:VirtualizedContainerService.HintSize="528.8,60" sap2010:WorkflowViewState.IdRef="BuildDataTable_1" TableInfo="&lt;NewDataSet&gt;&#xA;  &lt;xs:schema id=&quot;NewDataSet&quot; xmlns=&quot;&quot; xmlns:xs=&quot;http://www.w3.org/2001/XMLSchema&quot; xmlns:msdata=&quot;urn:schemas-microsoft-com:xml-msdata&quot;&gt;&#xA;    &lt;xs:element name=&quot;NewDataSet&quot; msdata:IsDataSet=&quot;true&quot; msdata:MainDataTable=&quot;TableName&quot; msdata:UseCurrentLocale=&quot;true&quot;&gt;&#xA;      &lt;xs:complexType&gt;&#xA;        &lt;xs:choice minOccurs=&quot;0&quot; maxOccurs=&quot;unbounded&quot;&gt;&#xA;          &lt;xs:element name=&quot;TableName&quot;&gt;&#xA;            &lt;xs:complexType&gt;&#xA;              &lt;xs:sequence&gt;&#xA;                &lt;xs:element name=&quot;Mail_Address&quot; msdata:Caption=&quot;&quot; minOccurs=&quot;0&quot;&gt;&#xA;                  &lt;xs:simpleType&gt;&#xA;                    &lt;xs:restriction base=&quot;xs:string&quot;&gt;&#xA;                      &lt;xs:maxLength value=&quot;100&quot; /&gt;&#xA;                    &lt;/xs:restriction&gt;&#xA;                  &lt;/xs:simpleType&gt;&#xA;                &lt;/xs:element&gt;&#xA;                &lt;xs:element name=&quot;Password&quot; msdata:Caption=&quot;&quot; minOccurs=&quot;0&quot;&gt;&#xA;                  &lt;xs:simpleType&gt;&#xA;                    &lt;xs:restriction base=&quot;xs:string&quot;&gt;&#xA;                      &lt;xs:maxLength value=&quot;100&quot; /&gt;&#xA;                    &lt;/xs:restriction&gt;&#xA;                  &lt;/xs:simpleType&gt;&#xA;                &lt;/xs:element&gt;&#xA;                &lt;xs:element name=&quot;Status&quot; msdata:Caption=&quot;&quot; minOccurs=&quot;0&quot;&gt;&#xA;                  &lt;xs:simpleType&gt;&#xA;                    &lt;xs:restriction base=&quot;xs:string&quot;&gt;&#xA;                      &lt;xs:maxLength value=&quot;100&quot; /&gt;&#xA;                    &lt;/xs:restriction&gt;&#xA;                  &lt;/xs:simpleType&gt;&#xA;                &lt;/xs:element&gt;&#xA;                &lt;xs:element name=&quot;Reason&quot; msdata:Caption=&quot;&quot; minOccurs=&quot;0&quot;&gt;&#xA;                  &lt;xs:simpleType&gt;&#xA;                    &lt;xs:restriction base=&quot;xs:string&quot;&gt;&#xA;                      &lt;xs:maxLength value=&quot;100&quot; /&gt;&#xA;                    &lt;/xs:restriction&gt;&#xA;                  &lt;/xs:simpleType&gt;&#xA;                &lt;/xs:element&gt;&#xA;                &lt;xs:element name=&quot;ProcessTime&quot; msdata:Caption=&quot;&quot; type=&quot;xs:duration&quot; minOccurs=&quot;0&quot; /&gt;&#xA;              &lt;/xs:sequence&gt;&#xA;            &lt;/xs:complexType&gt;&#xA;          &lt;/xs:element&gt;&#xA;        &lt;/xs:choice&gt;&#xA;      &lt;/xs:complexType&gt;&#xA;    &lt;/xs:element&gt;&#xA;  &lt;/xs:schema&gt;&#xA;&lt;/NewDataSet&gt;" />
+    <ui:AddDataRow DataRow="{x:Null}" ArrayRow="[{Mail_Address,Login_Password,Status,Reason,ProcessTime}]" DataTable="[dt_Results]" DisplayName="Add Data Row" sap:VirtualizedContainerService.HintSize="528.8,188" sap2010:WorkflowViewState.IdRef="AddDataRow_1" />
+    <ui:AppendRange DataTable="[dt_Results]" DisplayName="Append Range" sap:VirtualizedContainerService.HintSize="528.8,116" sap2010:WorkflowViewState.IdRef="AppendRange_1" SheetName="Sheet1" WorkbookPath="[in_Config(&quot;ResultsData_path&quot;).ToString]" />
   </Sequence>
 </Activity>
